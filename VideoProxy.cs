@@ -27,12 +27,20 @@ public class VideoProxy : ResoniteMod
         QBest
     }
 
+    public enum ProxyLocation
+    {
+        AU,
+        US,
+        CUSTOM
+    }
+
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
     public override string Version => "0.0.1";
 
     public static ModConfiguration config;
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("Whether or not to generate custom import button/s", "", () => true);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<ProxyLocation> PROXY_LOCATION = new ModConfigurationKey<ProxyLocation>("Proxy Server Region", "", () => ProxyLocation.AU);
     [AutoRegisterConfigKey] private static ModConfigurationKey<string> PROXY_URI = new ModConfigurationKey<string>("Proxy Server adress", "", () => "http://127.0.0.1:8080/video");
     [AutoRegisterConfigKey] private static ModConfigurationKey<DebugLevel> DEBUG_LEVEL = new ModConfigurationKey<DebugLevel>("Debug Level", "", () => DebugLevel.Min);
     [AutoRegisterConfigKey] private static ModConfigurationKey<Resolution> RESOLUTION = new ModConfigurationKey<Resolution>("Resolution", "", () => Resolution.Q1080P);
@@ -111,8 +119,15 @@ public class VideoProxy : ResoniteMod
             {
                 try
                 {
-                    StringBuilder stringBuilder = new StringBuilder(config.GetValue(PROXY_URI));
-                    switch(config.GetValue(RESOLUTION))
+                    StringBuilder stringBuilder = new StringBuilder();
+                    switch (config.GetValue(PROXY_LOCATION))
+                    {
+                        default:
+                            stringBuilder.Append(config.GetValue(PROXY_URI));
+                            break;
+                    }
+
+                    switch (config.GetValue(RESOLUTION))
                     {
                         case Resolution.Q480P:
                             stringBuilder.Append("Q480");

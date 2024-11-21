@@ -35,12 +35,14 @@
     <Reference Include="0Harmony">
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs\0Harmony.dll</HintPath>
     </Reference>
+    <Reference Include="Elements.Assets, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="Elements.Core">
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Resonite\Resonite_Data\Managed\Elements.Core.dll</HintPath>
     </Reference>
     <Reference Include="FrooxEngine">
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Resonite\Resonite_Data\Managed\FrooxEngine.dll</HintPath>
     </Reference>
+    <Reference Include="netstandard" />
     <Reference Include="ResoniteModLoader">
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Resonite\Libraries\ResoniteModLoader.dll</HintPath>
     </Reference>
@@ -64,7 +66,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-    <PropertyGroup Condition="'$(ResonitePath)'==''">
+  <PropertyGroup Condition="'$(ResonitePath)'==''">
     <ResonitePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\</ResonitePath>
     <ResonitePath Condition="Exists('$(HOME)/.steam/steam/steamapps/common/Resonite/')">$(HOME)/.steam/steam/steamapps/common/Resonite/</ResonitePath>
   </PropertyGroup>

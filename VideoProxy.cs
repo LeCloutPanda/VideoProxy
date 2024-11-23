@@ -116,7 +116,7 @@ public class VideoProxy : ResoniteMod
                             break;
 
                         case ProxyLocation.NA:
-                            stringBuilder.Append(config.GetValue(PROXY_URI));
+                            stringBuilder.Append("https://ntna1.sveken.com");
                             break;
                     }
 

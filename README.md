@@ -1,8 +1,10 @@
 # Resonite Youtube Video Proxy
 This Resonite mod restores higher quality youtube content in game by using an external proxy to present the final video file to the game. This can also be used to get around geo blocking so everyone in world can see the video.
 
+![Youtube Proxy Menu](misc/proxymenu.png)
+
 ## Install
-To install place the mod.dll from the release page inside your rml_mods folder. If you need information on modding resonite please visit the [Resonite Mod Loader page](https://github.com/resonite-modding-group/ResoniteModLoader). 
+To install place the mod.dll from the [release page](https://github.com/LeCloutPanda/VideoProxy/releases) inside your rml_mods folder. If you need information on modding resonite please visit the [Resonite Mod Loader page](https://github.com/resonite-modding-group/ResoniteModLoader). 
 
 It is also highly reccomended to also have/install [ResoniteModSettings](https://github.com/badhaloninja/ResoniteModSettings) to configure the quality settings if the default does not work for you.
 

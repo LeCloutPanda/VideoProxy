@@ -4,10 +4,12 @@ using HarmonyLib;
 using ResoniteModLoader;
 using System;
 using System.Threading.Tasks;
-using SkyFrost.Base;
 using Elements.Core;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Linq;
+using System.Collections.Generic;
 
 public class VideoProxy : ResoniteMod
 {
@@ -31,7 +33,7 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "0.0.1";
+    public override string Version => "1.0.0";
 
     public static ModConfiguration config;
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("enabledToggle", "Whether or not to generate custom import button", () => true);
@@ -59,155 +61,149 @@ public class VideoProxy : ResoniteMod
         {
             if (config.GetValue(ENABLED))
             {
+                if(__instance.Paths.Select(item => item.assetUri.Query.Contains("dummyParam=1")).Any()) return;
+
                 UIBuilder uIBuilder9 = ui;
                 LocaleString text = "YouTube Proxy";
                 Button proxyButton = uIBuilder9.Button(in text);
-                proxyButton.LocalPressed += (IButton button, ButtonEventData eventData) =>
+                proxyButton.LocalPressed += async (IButton button, ButtonEventData eventData) =>
                 {
-                    TryImport(__instance);
+                    string youtubeIdRegex = "(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?|shorts)\\/|.*[?&]v=)|youtu\\.be\\/)([^\"&?\\/\\s]{11})";
+                    IEnumerable<string> videoIds = __instance.Paths
+                        .Select(item => (!(item.assetUri != null)) ? new Uri(item.filePath) : item.assetUri)
+                        .Select(uri => Regex.Match(uri.ToString(), youtubeIdRegex).Groups[1].Value);
+
+                    proxyButton.Enabled = false;
+                    proxyButton.LabelText = "Importing...";
+
+                    bool fail = false;
+
+                    __instance.Paths = (await Task.WhenAll(__instance.Paths.Zip(videoIds, async (item, videoId) =>
+                    {
+                        if (string.IsNullOrEmpty(videoId)) return item;
+
+                        var newUri = await GetProxyUri(videoId);
+                        if (newUri != null)
+                        {
+                            return new ImportItem(newUri, item.itemName);
+                        }
+
+                        proxyButton.LabelText = "<alpha=red>Error! Check log for details.";
+                        fail = true;
+                        return item;
+                    }))).ToList();
+
+                    // normally it swaps to the next import step (which is the same stuff but without the "Import Proxy" button)
+                    // but if it fails we let the user see the error message and pick something else.
+                    if (fail) return;
+
+                    // hmm yes reflection is fun
+                    AccessTools.Method(typeof(ImportDialog), "Open")
+                        .Invoke(__instance, new object[] {
+                                (Action<UIBuilder>)AccessTools.Method(typeof(VideoImportDialog),
+                                    "OpenRoot",
+                                    new Type[] { typeof(UIBuilder) }).CreateDelegate(typeof(Action<UIBuilder>),
+                                    __instance
+                                )
+                            }
+                        );
                 };
             }
         }
 
-        private static void TryImport(VideoImportDialog __instance)
-        {
-            float3 b = float3.Zero;
-            float num = __instance.LocalUserRoot?.GlobalScale ?? 1f;
-            foreach (ImportItem item in __instance.Paths)
-            {
-                Slot s = __instance.LocalUserSpace.AddSlot("Video Proxy");
-                Slot slot = s;
-                float3 a = __instance.Slot.GlobalPosition;
-                slot.GlobalPosition = a + b;
-                s.GlobalRotation = __instance.Slot.GlobalRotation;
-                Slot slot2 = s;
-                a = float3.One;
-                slot2.GlobalScale = num * a;
-                a = __instance.Slot.Right;
-                b += a;
-                UniversalImporter.UndoableImport(s, async () => await CustomImportAsync(s, item));
-            }
-            __instance.Slot.Destroy();
-
-        }
-        private static async Task<Result> CustomImportAsync(Slot slot, ImportItem item)
+        private static async Task<Uri> GetProxyUri(string videoId)
         {
             Uri uri = null;
-
-            TextRenderer textRenderer = slot.AttachComponent<TextRenderer>();
-            textRenderer.Text.Value = $"Loading video through proxy...";
-            textRenderer.Bounded.Value = true;
-            textRenderer.Size.Value = 0.5f;
 
             using (HttpClient client = new HttpClient())
             {
                 try
                 {
-                    StringBuilder stringBuilder = new StringBuilder();
+                    string baseUri = null;
+                    List<string> path = new List<string>();
                     switch (config.GetValue(PROXY_LOCATION))
                     {
                         default:
                         case ProxyLocation.CUSTOM:
-                            stringBuilder.Append(config.GetValue(PROXY_URI));
+                            baseUri = config.GetValue(PROXY_URI).Trim();
                             break;
 
                         case ProxyLocation.AU:
-                            stringBuilder.Append("https://ntau1.sveken.com");
+                            baseUri = "https://ntau1.sveken.com";
                             break;
 
                         case ProxyLocation.NA:
-                            stringBuilder.Append("https://ntna1.sveken.com");
+                            baseUri = "https://ntna1.sveken.com";
                             break;
                     }
 
-                    if (config.GetValue(PROXY_URI).ToString().EndsWith("/")) stringBuilder.Append("reso/");
-                    else stringBuilder.Append("/reso/");
+                    UriBuilder builder = new UriBuilder(baseUri);
+
+                    path.Add("reso");
 
                     switch (config.GetValue(RESOLUTION))
                     {
                         case Resolution.Q480P:
-                            stringBuilder.Append("Q480P");
-                            if (config.GetValue(FORCED)) stringBuilder.Append("h264Forced");
+                            path.Add("Q480P");
+                            if (config.GetValue(FORCED)) path.Add("h264Forced");
                             break;
 
                         case Resolution.Q720P:
-                            stringBuilder.Append("Q720P");
-                            if (config.GetValue(FORCED)) stringBuilder.Append("h264Forced");
+                            path.Add("Q720P");
+                            if (config.GetValue(FORCED)) path.Add("h264Forced");
                             break;
 
                         case Resolution.Q1080P:
-                            stringBuilder.Append("Q1080P");
-                            if (config.GetValue(FORCED)) stringBuilder.Append("h264Forced");
+                            path.Add("Q1080P");
+                            if (config.GetValue(FORCED)) path.Add("h264Forced");
                             break;
 
                         case Resolution.Q1440P:
-                            stringBuilder.Append("Q1440P");
+                            path.Add("Q1440P");
                             break;
 
 
                         case Resolution.Q2160P:
-                            stringBuilder.Append("Q2160P");
+                            path.Add("Q2160P");
                             break;
 
                         case Resolution.QBest:
-                            stringBuilder.Append("QPoggers");
+                            path.Add("QPoggers");
                             break;
 
                         default:
-                            stringBuilder.Append("Q720P");
+                            path.Add("Q720P");
                             break;
                     }
 
-                    string videoID = item.filePath.Replace("https://www.youtube.com/watch?v=", "").Replace("https://www.youtube.com/shorts/", "");
-                    stringBuilder.Append($"/{videoID}");
+                    path.Add(videoId);
 
-                    Msg($"Attempting to load url: {stringBuilder.ToString()}");
+                    builder.Path = string.Join("/", path);
 
-                    HttpResponseMessage response = await client.GetAsync(new Uri(stringBuilder.ToString()));
+                    Msg($"Attempting to load url: {builder.Uri.ToString()}");
+
+                    HttpResponseMessage response = await client.GetAsync(builder.Uri);
                     string content = await response.Content.ReadAsStringAsync();
 
                     if (!content.StartsWith("error:") && response.IsSuccessStatusCode)
                     {
-                        uri = new Uri(await response.Content.ReadAsStringAsync());
-                        _ = slot.Engine;
-                        VideoPlayerInterface videoInterface = await slot.SpawnEntity<VideoPlayerInterface, LegacyVideoPlayer>(FavoriteEntity.VideoPlayer);
-                        videoInterface.InitializeEntity(item.itemName);
-                        slot = videoInterface.Slot.GetObjectRoot();
-                        videoInterface.SetSource(uri, true);
-                        slot.Name = $"Video Proxy: {uri}";
-                        Msg($"Successfully found and loaded: {stringBuilder.ToString()}");
-                        return Result.Success();
+                        uri = new Uri(await response.Content.ReadAsStringAsync() + "?dummyParam=1");
+                        Msg($"Successfully found and loaded: {uri.ToString()}");
+                        return uri;
                     }
                     else
                     {
                         string error = $"Failed to load video: ({response.StatusCode}) {content}";
-
-                        if (textRenderer != null)
-                        {
-                            textRenderer.Text.Value = "<color=red>" + error;
-                            textRenderer.SetupBoxCollider();
-                            slot.AttachComponent<Grabbable>();
-                        }
                         Error(error);
-                        return Result.Failure(error);
+                        return null;
                     }
                 }
                 catch (Exception ex)
                 {
                     string error = $"Failed to load video: {ex.Message}";
 
-                    if (textRenderer != null)
-                    {
-                        textRenderer.Text.Value = "<color=red>" + error;
-                        //textRenderer.Size.Value = 0.25f;
-                        //textRenderer.HorizontalAlign.Value = Elements.Assets.TextHorizontalAlignment.Left;
-                        //textRenderer.BoundsSize.Value = new float2(4, 2);
-
-                        textRenderer.SetupBoxCollider();
-                        slot.AttachComponent<Grabbable>();
-                    }
                     Error(error);
-                    return Result.Failure(error);
+                    return null;
                 }
             }
         }

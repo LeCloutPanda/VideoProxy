@@ -26,18 +26,18 @@ public class VideoProxy : ResoniteMod
 
     public enum ProxyLocation
     {
-        AU,
-        NA,
+        Australia,
+        NorthAmerica,
         CUSTOM
     }
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.1.0";
+    public override string Version => "1.1.1";
 
     public static ModConfiguration config;
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("enabledToggle", "Whether or not to generate custom import button", () => true);
-    [AutoRegisterConfigKey] private static ModConfigurationKey<ProxyLocation> PROXY_LOCATION = new ModConfigurationKey<ProxyLocation>("serverRegion", "Proxy Server Region", () => ProxyLocation.AU);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<ProxyLocation> PROXY_LOCATION = new ModConfigurationKey<ProxyLocation>("serverRegion", "Proxy Server Region", () => ProxyLocation.NorthAmerica);
     [AutoRegisterConfigKey] private static ModConfigurationKey<string> PROXY_URI = new ModConfigurationKey<string>("serverAddress", "Proxy Server address", () => "http://127.0.0.1:8080/");
     [AutoRegisterConfigKey] private static ModConfigurationKey<Resolution> RESOLUTION = new ModConfigurationKey<Resolution>("resolutionPreset", "Quality Preset", () => Resolution.Q720P);
     [AutoRegisterConfigKey] private static ModConfigurationKey<dummy> RESOLUTION_WARNING = new ModConfigurationKey<dummy>("resolutionWarning", "<color=yellow>⚠</color> QBest will load the best quality it can so be careful when using this setting. <color=yellow>⚠</color>");
@@ -128,11 +128,11 @@ public class VideoProxy : ResoniteMod
                             baseUri = config.GetValue(PROXY_URI).Trim();
                             break;
 
-                        case ProxyLocation.AU:
+                        case ProxyLocation.Australia:
                             baseUri = "https://ntau1.sveken.com";
                             break;
 
-                        case ProxyLocation.NA:
+                        case ProxyLocation.NorthAmerica:
                             baseUri = "https://ntna1.sveken.com";
                             break;
                     }
@@ -144,18 +144,18 @@ public class VideoProxy : ResoniteMod
                     switch (config.GetValue(RESOLUTION))
                     {
                         case Resolution.Q480P:
-                            path.Add("Q480P");
-                            if (config.GetValue(FORCED)) path.Add("h264Forced");
+                            if (config.GetValue(FORCED)) path.Add("Q480Ph264Forced");
+                            else path.Add("Q480P");
                             break;
 
                         case Resolution.Q720P:
-                            path.Add("Q720P");
-                            if (config.GetValue(FORCED)) path.Add("h264Forced");
+                            if (config.GetValue(FORCED)) path.Add("Q720Ph264Forced");
+                            else path.Add("Q720P");
                             break;
 
                         case Resolution.Q1080P:
-                            path.Add("Q1080P");
-                            if (config.GetValue(FORCED)) path.Add("h264Forced");
+                            if (config.GetValue(FORCED)) path.Add("Q480Ph264Forced");
+                            else path.Add("Q1080P");
                             break;
 
                         case Resolution.Q1440P:

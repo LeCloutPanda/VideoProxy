@@ -13,6 +13,10 @@ Simply paste the Youtube link into the game like normal, the dialog box will now
 
 By default the quality is set to 720P using VP9 codec which is a noticable upgrade already to the default 360p. Higher qualities may take additional time for everyone in the world to load. 
 
+### Background
+The Mod constructs a http request to example.com/reso/Quality-setting/YoutubeID.
+Then returns the completed video on example.com/Videos/youtubeID/Quality/filename.webm
+
 ### Quality settings available.
 
 Quality settings are adjustable using [ResoniteModSettings](https://github.com/badhaloninja/ResoniteModSettings)

@@ -6,7 +6,6 @@ using System;
 using System.Threading.Tasks;
 using Elements.Core;
 using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Collections.Generic;
@@ -33,7 +32,7 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.1.1";
+    public override string Version => "1.1.2";
 
     public static ModConfiguration config;
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("enabledToggle", "Whether or not to generate custom import button", () => true);
@@ -97,16 +96,20 @@ public class VideoProxy : ResoniteMod
                     // but if it fails we let the user see the error message and pick something else.
                     if (fail) return;
 
-                    // hmm yes reflection is fun
-                    AccessTools.Method(typeof(ImportDialog), "Open")
-                        .Invoke(__instance, new object[] {
+                    // Idk why we need a delay specifically because MonkeyLoader but we need one so /shrug
+                    __instance.RunInUpdates(3, () =>
+                    {
+                        // hmm yes reflection is fun
+                        AccessTools.Method(typeof(ImportDialog), "Open")
+                            .Invoke(__instance, new object[] {
                                 (Action<UIBuilder>)AccessTools.Method(typeof(VideoImportDialog),
                                     "OpenRoot",
                                     new Type[] { typeof(UIBuilder) }).CreateDelegate(typeof(Action<UIBuilder>),
                                     __instance
                                 )
-                            }
-                        );
+                                }
+                            );
+                    });
                 };
             }
         }

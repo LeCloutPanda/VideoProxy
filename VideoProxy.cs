@@ -32,7 +32,7 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.1.2";
+    public override string Version => "1.1.3-a";
 
     public static ModConfiguration config;
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("enabledToggle", "Whether or not to generate custom import button", () => true);
@@ -42,6 +42,7 @@ public class VideoProxy : ResoniteMod
     [AutoRegisterConfigKey] private static ModConfigurationKey<dummy> RESOLUTION_WARNING = new ModConfigurationKey<dummy>("resolutionWarning", "<color=yellow>⚠</color> QBest will load the best quality it can so be careful when using this setting. <color=yellow>⚠</color>");
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCED = new ModConfigurationKey<bool>("forceCodecToggle", "Force h264 Codec", () => false);
     [AutoRegisterConfigKey] private static ModConfigurationKey<dummy> CODEC_WARNING = new ModConfigurationKey<dummy>("codecWarning", "<color=yellow>⚠</color> Force h264 Codec only works for quality levels Q480P, Q720P, Q1080P <color=yellow>⚠</color>");
+    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCE_LIBVLC = new ModConfigurationKey<bool>("forceLibvlc", "", () => true);
 
     public override void OnEngineInit()
     {
@@ -111,6 +112,17 @@ public class VideoProxy : ResoniteMod
                             );
                     });
                 };
+            }
+        }
+
+
+        [HarmonyPatch(typeof(VideoTextureProvider), "OnAwake")]
+        class PlaybackEnginePatch
+        {
+            [HarmonyPostfix]
+            private static void Postfix(VideoTextureProvider __instance)
+            {
+                if (config.GetValue(FORCE_LIBVLC)) __instance.ForcePlaybackEngine.Value = "libVLC";
             }
         }
 

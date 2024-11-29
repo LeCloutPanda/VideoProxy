@@ -32,7 +32,12 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
+<<<<<<< HEAD
     public override string Version => "1.1.3-a";
+=======
+    public override string Version => "1.1.2";
+    public override string Link => "https://github.com/LeCloutPanda/VideoProxy";
+>>>>>>> 172273a51e55f991dee807c0cbba5361fe725ed7
 
     public static ModConfiguration config;
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("enabledToggle", "Whether or not to generate custom import button", () => true);

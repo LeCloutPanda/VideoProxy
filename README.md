@@ -4,7 +4,7 @@ This Resonite mod restores higher quality youtube content in game by using an ex
 ![Youtube Proxy Menu](misc/proxymenu.png)
 
 ## Install
-To install place the mod.dll from the [release page](https://github.com/LeCloutPanda/VideoProxy/releases) inside your rml_mods folder. If you need information on modding resonite please visit the [Resonite Mod Loader page](https://github.com/resonite-modding-group/ResoniteModLoader). 
+To install grab the latest [VideoProxy.dll](https://github.com/LeCloutPanda/VideoProxy/releases/latest/download/VideoProxy.dll) and place it into your rml_mods folder. If you need information on modding resonite please visit the [Resonite Mod Loader page](https://github.com/resonite-modding-group/ResoniteModLoader). 
 
 It is also highly reccomended to also have/install [ResoniteModSettings](https://github.com/badhaloninja/ResoniteModSettings) to configure the quality settings if the default does not work for you.
 
@@ -14,8 +14,8 @@ Simply paste the Youtube link into the game like normal, the dialog box will now
 By default the quality is set to 720P using VP9 codec which is a noticable upgrade already to the default 360p. Higher qualities may take additional time for everyone in the world to load. 
 
 ### Background
-The Mod constructs a http request to example.com/reso/Quality-setting/YoutubeID.
-Then returns the completed video on example.com/Videos/youtubeID/Quality/filename.webm
+The Mod constructs a http request to ``example.com/reso/Quality-setting/YoutubeID.``
+Then returns the completed video on ``example.com/Videos/youtubeID/Quality/filename.webm``
 
 ### Quality settings available.
 

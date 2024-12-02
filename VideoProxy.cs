@@ -9,6 +9,9 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
+using SkyFrost.Base;
+using System.Reflection;
 
 public class VideoProxy : ResoniteMod
 {
@@ -32,18 +35,17 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.1.3";
+    public override string Version => "1.1.4";
     public override string Link => "https://github.com/LeCloutPanda/VideoProxy";
 
     public static ModConfiguration config;
-    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("enabledToggle", "Whether or not to generate custom import button", () => true);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("enabledToggle", "Generate option to use VideoProxy when importing a video", () => true);
     [AutoRegisterConfigKey] private static ModConfigurationKey<ProxyLocation> PROXY_LOCATION = new ModConfigurationKey<ProxyLocation>("serverRegion", "Proxy Server Region", () => ProxyLocation.NorthAmerica);
     [AutoRegisterConfigKey] private static ModConfigurationKey<string> PROXY_URI = new ModConfigurationKey<string>("serverAddress", "Proxy Server address", () => "http://127.0.0.1:8080/");
-    [AutoRegisterConfigKey] private static ModConfigurationKey<Resolution> RESOLUTION = new ModConfigurationKey<Resolution>("resolutionPreset", "Quality Preset", () => Resolution.Q720P);
-    [AutoRegisterConfigKey] private static ModConfigurationKey<dummy> RESOLUTION_WARNING = new ModConfigurationKey<dummy>("resolutionWarning", "<color=yellow>⚠</color> QBest will load the best quality it can so be careful when using this setting. <color=yellow>⚠</color>");
-    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCED = new ModConfigurationKey<bool>("forceCodecToggle", "Force h264 Codec", () => false);
-    [AutoRegisterConfigKey] private static ModConfigurationKey<dummy> CODEC_WARNING = new ModConfigurationKey<dummy>("codecWarning", "<color=yellow>⚠</color> Force h264 Codec only works for quality levels Q480P, Q720P, Q1080P <color=yellow>⚠</color>");
-    //[AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCE_LIBVLC = new ModConfigurationKey<bool>("forceLibvlc", "", () => true);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<Resolution> RESOLUTION = new ModConfigurationKey<Resolution>("resolutionPreset", "Quality Preset\n<color=yellow>⚠</color> QBest will load the best quality it can so be careful when using this setting <color=yellow>⚠</color>", () => Resolution.Q720P);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCED = new ModConfigurationKey<bool>("forceCodecToggle", "Force h264 Codec\n<color=yellow>⚠</color> Force h264 Codec only works for quality levels Q480P, Q720P, Q1080P <color=yellow>⚠</color>", () => false);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> SHOW_ERROR_ON_IMPORT_DIALOG = new ModConfigurationKey<bool>("showErrorOnImportDialog", "Show Error on import dialog", () => true);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> BYPASS_REIMPORT_MENU = new ModConfigurationKey<bool>("bypassReimportMenu", "Bypass the Import menu when using video proxy", () => true);
 
     public override void OnEngineInit()
     {
@@ -84,12 +86,19 @@ public class VideoProxy : ResoniteMod
                         if (string.IsNullOrEmpty(videoId)) return item;
 
                         var newUri = await GetProxyUri(videoId);
-                        if (newUri != null)
+                        if (newUri != null && !newUri.ToString().ToLower().StartsWith("error:"))
                         {
-                            return new ImportItem(newUri, item.itemName);
+                            if (config.GetValue(BYPASS_REIMPORT_MENU))
+                            {
+                                ImportBasicVideo(__instance, newUri);
+                            }
+                            else
+                            {
+                                return new ImportItem(newUri, item.itemName);
+                            }
                         }
 
-                        proxyButton.LabelText = "<alpha=red>Error! Check log for details.";
+                        proxyButton.LabelText = config.GetValue(SHOW_ERROR_ON_IMPORT_DIALOG) ? $"<alpha=red>{newUri.ToString().Replace("error:", "Error!")}" : "<alpha=red>Error! Check log for details.";
                         fail = true;
                         return item;
                     }))).ToList();
@@ -98,34 +107,56 @@ public class VideoProxy : ResoniteMod
                     // but if it fails we let the user see the error message and pick something else.
                     if (fail) return;
 
-                    // Idk why we need a delay specifically because MonkeyLoader but we need one so /shrug
-                    __instance.RunInUpdates(3, () =>
+                    if (!config.GetValue(BYPASS_REIMPORT_MENU))
                     {
-                        // hmm yes reflection is fun
-                        AccessTools.Method(typeof(ImportDialog), "Open")
-                            .Invoke(__instance, new object[] {
-                                (Action<UIBuilder>)AccessTools.Method(typeof(VideoImportDialog),
-                                    "OpenRoot",
-                                    new Type[] { typeof(UIBuilder) }).CreateDelegate(typeof(Action<UIBuilder>),
-                                    __instance
-                                )
-                                }
-                            );
-                    });
+                        // Idk why we need a delay specifically because MonkeyLoader but we need one so /shrug
+                        __instance.RunInUpdates(3, () =>
+                        {
+                            // hmm yes reflection is fun
+                            AccessTools.Method(typeof(ImportDialog), "Open")
+                                .Invoke(__instance, new object[] {
+                                    (Action<UIBuilder>)AccessTools.Method(typeof(VideoImportDialog),
+                                        "OpenRoot",
+                                        new Type[] { typeof(UIBuilder) }).CreateDelegate(typeof(Action<UIBuilder>),
+                                        __instance
+                                    )
+                                    }
+                                );
+                        });
+                    }
                 };
             }
         }
 
+        public static void ImportBasicVideo(VideoImportDialog __instance, Uri uri)
+        {
+            float3 b = float3.Zero;
+            float num = __instance.LocalUserRoot?.GlobalScale ?? 1f;
 
-        //[HarmonyPatch(typeof(VideoTextureProvider), "OnAwake")]
-        //class PlaybackEnginePatch
-        //{
-        //    [HarmonyPostfix]
-        //    private static void Postfix(VideoTextureProvider __instance)
-        //    {
-        //        if (config.GetValue(FORCE_LIBVLC)) __instance.ForcePlaybackEngine.Value = "libVLC";
-        //    }
-        //}
+            Slot s = __instance.LocalUserSpace.AddSlot("Test");
+            Slot slot = s;
+            float3 a = __instance.Slot.GlobalPosition;
+            slot.GlobalPosition = a + b;
+            s.GlobalRotation = __instance.Slot.GlobalRotation;
+            Slot slot2 = s;
+            a = float3.One;
+            slot2.GlobalScale = num * a;
+            a = __instance.Slot.Right;
+            b += a;
+            UniversalImporter.UndoableImport(s, async () => await CustomImportAsync(s, uri));
+            __instance.Slot.Destroy();
+        }
+
+        private static async Task<Result> CustomImportAsync(Slot slot, Uri uri)
+        {
+            _ = slot.Engine;
+            VideoPlayerInterface videoInterface = await slot.SpawnEntity<VideoPlayerInterface, LegacyVideoPlayer>(FavoriteEntity.VideoPlayer);
+            videoInterface.InitializeEntity("Test Entity");
+            slot = videoInterface.Slot.GetObjectRoot();
+            videoInterface.SetSource(uri, true);
+            slot.Name = $"Video Proxy: {uri}";
+            return Result.Success();
+        }
 
         private static async Task<Uri> GetProxyUri(string videoId)
         {
@@ -201,7 +232,7 @@ public class VideoProxy : ResoniteMod
                     HttpResponseMessage response = await client.GetAsync(builder.Uri);
                     string content = await response.Content.ReadAsStringAsync();
 
-                    if (!content.StartsWith("error:") && response.IsSuccessStatusCode)
+                    if (!content.ToLower().StartsWith("error:") && response.IsSuccessStatusCode)
                     {
                         uri = new Uri(await response.Content.ReadAsStringAsync() + "?dummyParam=1");
                         Msg($"Successfully found and loaded: {uri.ToString()}");
@@ -211,7 +242,7 @@ public class VideoProxy : ResoniteMod
                     {
                         string error = $"Failed to load video: ({response.StatusCode}) {content}";
                         Error(error);
-                        return null;
+                        return new Uri(content);
                     }
                 }
                 catch (Exception ex)

@@ -35,7 +35,7 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.2.0-a";
+    public override string Version => "1.2.0-b";
     public override string Link => "https://github.com/LeCloutPanda/VideoProxy";
 
     public static ModConfiguration config;

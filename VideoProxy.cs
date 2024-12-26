@@ -35,17 +35,16 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.1.4";
+    public override string Version => "1.2.0-a";
     public override string Link => "https://github.com/LeCloutPanda/VideoProxy";
 
     public static ModConfiguration config;
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> ENABLED = new ModConfigurationKey<bool>("enabledToggle", "Generate option to use VideoProxy when importing a video", () => true);
     [AutoRegisterConfigKey] private static ModConfigurationKey<ProxyLocation> PROXY_LOCATION = new ModConfigurationKey<ProxyLocation>("serverRegion", "Proxy Server Region", () => ProxyLocation.NorthAmerica);
-    [AutoRegisterConfigKey] private static ModConfigurationKey<string> PROXY_URI = new ModConfigurationKey<string>("serverAddress", "Proxy Server address", () => "http://127.0.0.1:8080/");
-    [AutoRegisterConfigKey] private static ModConfigurationKey<Resolution> RESOLUTION = new ModConfigurationKey<Resolution>("resolutionPreset", "Quality Preset\n<color=yellow>⚠</color> QBest will load the best quality it can so be careful when using this setting <color=yellow>⚠</color>", () => Resolution.Q720P);
-    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCED = new ModConfigurationKey<bool>("forceCodecToggle", "Force h264 Codec\n<color=yellow>⚠</color> Force h264 Codec only works for quality levels Q480P, Q720P, Q1080P <color=yellow>⚠</color>", () => false);
-    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> SHOW_ERROR_ON_IMPORT_DIALOG = new ModConfigurationKey<bool>("showErrorOnImportDialog", "Show Error on import dialog", () => true);
-    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> BYPASS_REIMPORT_MENU = new ModConfigurationKey<bool>("bypassReimportMenu", "Bypass the Import menu when using video proxy", () => true);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<string> PROXY_URI = new ModConfigurationKey<string>("serverAddress", "Proxy Server address(Used when ServerRegion is set to CUSTOM)", () => "http://127.0.0.1:8080/");
+    [AutoRegisterConfigKey] private static ModConfigurationKey<Resolution> RESOLUTION = new ModConfigurationKey<Resolution>("resolutionPreset", "Quality Preset: <color=yellow>⚠</color> QBest will load the best quality it can so be careful when using this setting <color=yellow>⚠</color>", () => Resolution.Q720P);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCED = new ModConfigurationKey<bool>("forceCodecToggle", "Force h264 Codec: <color=yellow>⚠</color> Force h264 Codec only works for quality levels Q480P, Q720P, Q1080P <color=yellow>⚠</color>", () => false);
+    //[AutoRegisterConfigKey] private static ModConfigurationKey<bool> SHOW_ERROR_ON_IMPORT_DIALOG = new ModConfigurationKey<bool>("showErrorOnImportDialog", "Show Error on import dialog", () => true);
 
     public override void OnEngineInit()
     {
@@ -64,8 +63,6 @@ public class VideoProxy : ResoniteMod
         {
             if (config.GetValue(ENABLED))
             {
-                if(__instance.Paths.Select(item => item.assetUri.Query.Contains("dummyParam=1")).Any()) return;
-
                 UIBuilder uIBuilder9 = ui;
                 LocaleString text = "YouTube Proxy";
                 Button proxyButton = uIBuilder9.Button(in text);
@@ -78,51 +75,23 @@ public class VideoProxy : ResoniteMod
 
                     proxyButton.Enabled = false;
                     proxyButton.LabelText = "Importing...";
-
-                    bool fail = false;
-
-                    __instance.Paths = (await Task.WhenAll(__instance.Paths.Zip(videoIds, async (item, videoId) =>
-                    {
-                        if (string.IsNullOrEmpty(videoId)) return item;
-
-                        var newUri = await GetProxyUri(videoId);
-                        if (newUri != null && !newUri.ToString().ToLower().StartsWith("error:"))
-                        {
-                            if (config.GetValue(BYPASS_REIMPORT_MENU))
+                    
+                    try {
+                        foreach(string videoId in videoIds) {
+                            var newUri = await GetProxyUri(videoId);
+                            if (newUri != null && !newUri.ToString().ToLower().StartsWith("error:"))
                             {
                                 ImportBasicVideo(__instance, newUri);
-                            }
-                            else
+                            } 
+                            else 
                             {
-                                return new ImportItem(newUri, item.itemName);
+                                proxyButton.LabelText = $"<alpha=red>{newUri.ToString().Replace("error:", "Error!")}";
+                                Error(newUri);
                             }
                         }
-
-                        proxyButton.LabelText = config.GetValue(SHOW_ERROR_ON_IMPORT_DIALOG) ? $"<alpha=red>{newUri.ToString().Replace("error:", "Error!")}" : "<alpha=red>Error! Check log for details.";
-                        fail = true;
-                        return item;
-                    }))).ToList();
-
-                    // normally it swaps to the next import step (which is the same stuff but without the "Import Proxy" button)
-                    // but if it fails we let the user see the error message and pick something else.
-                    if (fail) return;
-
-                    if (!config.GetValue(BYPASS_REIMPORT_MENU))
-                    {
-                        // Idk why we need a delay specifically because MonkeyLoader but we need one so /shrug
-                        __instance.RunInUpdates(3, () =>
-                        {
-                            // hmm yes reflection is fun
-                            AccessTools.Method(typeof(ImportDialog), "Open")
-                                .Invoke(__instance, new object[] {
-                                    (Action<UIBuilder>)AccessTools.Method(typeof(VideoImportDialog),
-                                        "OpenRoot",
-                                        new Type[] { typeof(UIBuilder) }).CreateDelegate(typeof(Action<UIBuilder>),
-                                        __instance
-                                    )
-                                    }
-                                );
-                        });
+                    } catch (Exception ex) {
+                        proxyButton.LabelText = $"Failed to import video. Check logs.";
+                        Error(ex);
                     }
                 };
             }

@@ -35,7 +35,7 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.2.0-b";
+    public override string Version => "1.2.0-c";
     public override string Link => "https://github.com/LeCloutPanda/VideoProxy";
 
     public static ModConfiguration config;
@@ -44,7 +44,6 @@ public class VideoProxy : ResoniteMod
     [AutoRegisterConfigKey] private static ModConfigurationKey<string> PROXY_URI = new ModConfigurationKey<string>("serverAddress", "Proxy Server address(Used when ServerRegion is set to CUSTOM)", () => "http://127.0.0.1:8080/");
     [AutoRegisterConfigKey] private static ModConfigurationKey<Resolution> RESOLUTION = new ModConfigurationKey<Resolution>("resolutionPreset", "Quality Preset: <color=yellow>⚠</color> QBest will load the best quality it can so be careful when using this setting <color=yellow>⚠</color>", () => Resolution.Q720P);
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCED = new ModConfigurationKey<bool>("forceCodecToggle", "Force h264 Codec: <color=yellow>⚠</color> Force h264 Codec only works for quality levels Q480P, Q720P, Q1080P <color=yellow>⚠</color>", () => false);
-    //[AutoRegisterConfigKey] private static ModConfigurationKey<bool> SHOW_ERROR_ON_IMPORT_DIALOG = new ModConfigurationKey<bool>("showErrorOnImportDialog", "Show Error on import dialog", () => true);
 
     public override void OnEngineInit()
     {
@@ -69,16 +68,14 @@ public class VideoProxy : ResoniteMod
                 proxyButton.LocalPressed += async (IButton button, ButtonEventData eventData) =>
                 {
                     string youtubeIdRegex = "(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?|shorts)\\/|.*[?&]v=)|youtu\\.be\\/)([^\"&?\\/\\s]{11})";
-                    IEnumerable<string> videoIds = __instance.Paths
-                        .Select(item => (!(item.assetUri != null)) ? new Uri(item.filePath) : item.assetUri)
-                        .Select(uri => Regex.Match(uri.ToString(), youtubeIdRegex).Groups[1].Value);
 
                     proxyButton.Enabled = false;
                     proxyButton.LabelText = "Importing...";
                     
                     try {
-                        foreach(string videoId in videoIds) {
-                            var newUri = await GetProxyUri(videoId);
+                        foreach(var videoId in __instance.Paths) {
+                            var id = Regex.Replace(videoId.assetUri.ToString(), youtubeIdRegex, "");
+                            var newUri = await GetProxyUri(id);
                             if (newUri != null && !newUri.ToString().ToLower().StartsWith("error:"))
                             {
                                 ImportBasicVideo(__instance, newUri);

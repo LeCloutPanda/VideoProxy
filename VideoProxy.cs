@@ -62,6 +62,7 @@ public class VideoProxy : ResoniteMod
         {
             if (config.GetValue(ENABLED))
             {
+
                 UIBuilder uIBuilder9 = ui;
                 LocaleString text = "YouTube Proxy";
                 Button proxyButton = uIBuilder9.Button(in text);
@@ -72,22 +73,36 @@ public class VideoProxy : ResoniteMod
                     proxyButton.Enabled = false;
                     proxyButton.LabelText = "Importing...";
                     
+
                     try {
-                        foreach(var videoId in __instance.Paths) {
-                            var id = Regex.Replace(videoId.assetUri.ToString(), youtubeIdRegex, "");
-                            var newUri = await GetProxyUri(id);
-                            if (newUri != null && !newUri.ToString().ToLower().StartsWith("error:"))
+                        foreach(ImportItem videoId in __instance.Paths) {
+                            Msg($"Attempting to process video URL: {videoId.filePath.ToString()}");
+                            Match match = Regex.Match(videoId.filePath.ToString(), youtubeIdRegex);
+
+                            if (match.Success)
                             {
-                                ImportBasicVideo(__instance, newUri);
+                                string id = match.Groups[1].Value;
+                                Msg($"Found video with ID: {id}");
+                                Uri newUri = await GetProxyUri(id);
+                                if (newUri != null && !newUri.ToString().ToLower().StartsWith("error:"))
+                                {
+                                    Msg($"Trying import with URL: {newUri.ToString()}");
+                                    ImportBasicVideo(__instance, newUri);
+                                } 
+                                else 
+                                {
+                                    proxyButton.LabelText = $"<alpha=red>{newUri.ToString().Replace("error:", "Error!")}";
+                                    Error(newUri);
+                                }
                             } 
                             else 
                             {
-                                proxyButton.LabelText = $"<alpha=red>{newUri.ToString().Replace("error:", "Error!")}";
-                                Error(newUri);
+                                Error("Failed to get video ID from URL");
+                                return;
                             }
                         }
                     } catch (Exception ex) {
-                        proxyButton.LabelText = $"Failed to import video. Check logs.";
+                        proxyButton.LabelText = $"<alpha=red>Failed to import video. Check logs.";
                         Error(ex);
                     }
                 };
@@ -193,27 +208,27 @@ public class VideoProxy : ResoniteMod
 
                     builder.Path = string.Join("/", path);
 
-                    Msg($"Attempting to load url: {builder.Uri.ToString()}");
+                    Msg($"Attempting to fetch URL: {builder.Uri.ToString()}");
 
                     HttpResponseMessage response = await client.GetAsync(builder.Uri);
                     string content = await response.Content.ReadAsStringAsync();
 
                     if (!content.ToLower().StartsWith("error:") && response.IsSuccessStatusCode)
                     {
-                        uri = new Uri(await response.Content.ReadAsStringAsync() + "?dummyParam=1");
-                        Msg($"Successfully found and loaded: {uri.ToString()}");
+                        uri = new Uri(await response.Content.ReadAsStringAsync());
+                        Msg($"Successfully fetched video URL: {uri.ToString()}");
                         return uri;
                     }
                     else
                     {
-                        string error = $"Failed to load video: ({response.StatusCode}) {content}";
+                        string error = $"Failed fetching video URL: ({response.StatusCode}) {content}";
                         Error(error);
                         return new Uri(content);
                     }
                 }
                 catch (Exception ex)
                 {
-                    string error = $"Failed to load video: {ex.Message}";
+                    string error = $"Failed fetching video URL: {ex.Message}";
 
                     Error(error);
                     return null;

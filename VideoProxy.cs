@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using SkyFrost.Base;
 using System.Reflection;
+using System.Linq.Expressions;
 
 public class VideoProxy : ResoniteMod
 {
@@ -35,7 +36,7 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.2.0-c";
+    public override string Version => "1.2.0";
     public override string Link => "https://github.com/LeCloutPanda/VideoProxy";
 
     public static ModConfiguration config;
@@ -68,39 +69,11 @@ public class VideoProxy : ResoniteMod
                 Button proxyButton = uIBuilder9.Button(in text);
                 proxyButton.LocalPressed += async (IButton button, ButtonEventData eventData) =>
                 {
-                    string youtubeIdRegex = "(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?|shorts)\\/|.*[?&]v=)|youtu\\.be\\/)([^\"&?\\/\\s]{11})";
-
                     proxyButton.Enabled = false;
                     proxyButton.LabelText = "Importing...";
                     
-
                     try {
-                        foreach(ImportItem videoId in __instance.Paths) {
-                            Msg($"Attempting to process video URL: {videoId.filePath.ToString()}");
-                            Match match = Regex.Match(videoId.filePath.ToString(), youtubeIdRegex);
-
-                            if (match.Success)
-                            {
-                                string id = match.Groups[1].Value;
-                                Msg($"Found video with ID: {id}");
-                                Uri newUri = await GetProxyUri(id);
-                                if (newUri != null && !newUri.ToString().ToLower().StartsWith("error:"))
-                                {
-                                    Msg($"Trying import with URL: {newUri.ToString()}");
-                                    ImportBasicVideo(__instance, newUri);
-                                } 
-                                else 
-                                {
-                                    proxyButton.LabelText = $"<alpha=red>{newUri.ToString().Replace("error:", "Error!")}";
-                                    Error(newUri);
-                                }
-                            } 
-                            else 
-                            {
-                                Error("Failed to get video ID from URL");
-                                return;
-                            }
-                        }
+                        TryImport(__instance, proxyButton);
                     } catch (Exception ex) {
                         proxyButton.LabelText = $"<alpha=red>Failed to import video. Check logs.";
                         Error(ex);
@@ -109,44 +82,46 @@ public class VideoProxy : ResoniteMod
             }
         }
 
-        public static void ImportBasicVideo(VideoImportDialog __instance, Uri uri)
+        private static void TryImport(VideoImportDialog __instance, Button proxyButton)
         {
             float3 b = float3.Zero;
             float num = __instance.LocalUserRoot?.GlobalScale ?? 1f;
 
-            Slot s = __instance.LocalUserSpace.AddSlot("Test");
-            Slot slot = s;
-            float3 a = __instance.Slot.GlobalPosition;
-            slot.GlobalPosition = a + b;
-            s.GlobalRotation = __instance.Slot.GlobalRotation;
-            Slot slot2 = s;
-            a = float3.One;
-            slot2.GlobalScale = num * a;
-            a = __instance.Slot.Right;
-            b += a;
-            UniversalImporter.UndoableImport(s, async () => await CustomImportAsync(s, uri));
-            __instance.Slot.Destroy();
+            __instance.Paths.ForEach(async (item) => {
+                Slot s = __instance.LocalUserSpace.AddSlot("Video Proxy");
+                Slot slot = s;
+                float3 a = __instance.Slot.GlobalPosition;
+                slot.GlobalPosition = a + b;
+                s.GlobalRotation = __instance.Slot.GlobalRotation;
+                Slot slot2 = s;
+                a = float3.One;
+                slot2.GlobalScale = num * a;
+                a = __instance.Slot.Right;
+                b += a;
+                UniversalImporter.UndoableImport(s, async () => await CustomImportAsync(__instance.Slot, s, item, proxyButton));
+            });
         }
 
-        private static async Task<Result> CustomImportAsync(Slot slot, Uri uri)
-        {
-            _ = slot.Engine;
-            VideoPlayerInterface videoInterface = await slot.SpawnEntity<VideoPlayerInterface, LegacyVideoPlayer>(FavoriteEntity.VideoPlayer);
-            videoInterface.InitializeEntity("Test Entity");
-            slot = videoInterface.Slot.GetObjectRoot();
-            videoInterface.SetSource(uri, true);
-            slot.Name = $"Video Proxy: {uri}";
-            return Result.Success();
-        }
-
-        private static async Task<Uri> GetProxyUri(string videoId)
+        private static async Task<Result> CustomImportAsync(Slot __instance, Slot slot, ImportItem item, Button proxyButton)
         {
             Uri uri = null;
-
-            using (HttpClient client = new HttpClient())
-            {
-                try
+            string id = null;
+            try {
+                using (HttpClient client = new HttpClient())
                 {
+                    string youtubeIdRegex = "(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?|shorts)\\/|.*[?&]v=)|youtu\\.be\\/)([^\"&?\\/\\s]{11})";
+                    Msg($"Attempting to process video URL: {item.filePath.ToString()}");
+                    Match match = Regex.Match(item.filePath.ToString(), youtubeIdRegex);
+
+                    if (match.Success)
+                    {
+                        id = match.Groups[1].Value;
+                    } 
+                    else 
+                    {
+                        return Result.Failure("Failed to get video ID from URL");
+                    }
+
                     string baseUri = null;
                     List<string> path = new List<string>();
                     switch (config.GetValue(PROXY_LOCATION))
@@ -204,7 +179,7 @@ public class VideoProxy : ResoniteMod
                             break;
                     }
 
-                    path.Add(videoId);
+                    path.Add(id);
 
                     builder.Path = string.Join("/", path);
 
@@ -217,22 +192,27 @@ public class VideoProxy : ResoniteMod
                     {
                         uri = new Uri(await response.Content.ReadAsStringAsync());
                         Msg($"Successfully fetched video URL: {uri.ToString()}");
-                        return uri;
+                        _ = slot.Engine;
+                        VideoPlayerInterface videoInterface = await slot.SpawnEntity<VideoPlayerInterface, LegacyVideoPlayer>(FavoriteEntity.VideoPlayer);
+                        videoInterface.InitializeEntity("Test Entity");
+                        slot = videoInterface.Slot.GetObjectRoot();
+                        videoInterface.SetSource(uri, true);
+                        slot.Name = $"Video Proxy: {uri}";
+
+                        __instance?.Destroy();
+                        return Result.Success();
                     }
                     else
                     {
                         string error = $"Failed fetching video URL: ({response.StatusCode}) {content}";
-                        Error(error);
-                        return new Uri(content);
+                        proxyButton.LabelText = $"<alpha=red>{error}";
+                        return Result.Failure(error);
                     }
                 }
-                catch (Exception ex)
-                {
-                    string error = $"Failed fetching video URL: {ex.Message}";
-
-                    Error(error);
-                    return null;
-                }
+            }                
+            catch (Exception ex) 
+            {
+                return Result.Failure(ex.Message);
             }
         }
     }

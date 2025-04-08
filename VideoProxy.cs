@@ -13,6 +13,7 @@ using System.IO;
 using SkyFrost.Base;
 using System.Reflection;
 using System.Linq.Expressions;
+using FrooxEngine.Store;
 
 public class VideoProxy : ResoniteMod
 {
@@ -45,6 +46,7 @@ public class VideoProxy : ResoniteMod
     [AutoRegisterConfigKey] private static ModConfigurationKey<string> PROXY_URI = new ModConfigurationKey<string>("serverAddress", "Proxy Server address(Used when ServerRegion is set to CUSTOM)", () => "http://127.0.0.1:8080/");
     [AutoRegisterConfigKey] private static ModConfigurationKey<Resolution> RESOLUTION = new ModConfigurationKey<Resolution>("resolutionPreset", "Quality Preset: <color=yellow>⚠</color> QBest will load the best quality it can so be careful when using this setting <color=yellow>⚠</color>", () => Resolution.Q720P);
     [AutoRegisterConfigKey] private static ModConfigurationKey<bool> FORCED = new ModConfigurationKey<bool>("forceCodecToggle", "Force h264 Codec: <color=yellow>⚠</color> Force h264 Codec only works for quality levels Q480P, Q720P, Q1080P <color=yellow>⚠</color>", () => false);
+    [AutoRegisterConfigKey] private static ModConfigurationKey<string> DOWNLOAD_FOLDER = new ModConfigurationKey<string>("downloadFolder", "Folder which is used to download and import videos", () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Resonite"));
 
     public override void OnEngineInit()
     {
@@ -64,41 +66,134 @@ public class VideoProxy : ResoniteMod
             if (config.GetValue(ENABLED))
             {
 
-                UIBuilder uIBuilder9 = ui;
+                UIBuilder uIBuilder = ui;
                 LocaleString text = "YouTube Proxy";
-                Button proxyButton = uIBuilder9.Button(in text);
-                proxyButton.LocalPressed += async (IButton button, ButtonEventData eventData) =>
+                Button proxyButton1 = uIBuilder.Button(in text);
+                proxyButton1.LocalPressed += async (IButton button, ButtonEventData eventData) =>
                 {
-                    proxyButton.Enabled = false;
-                    proxyButton.LabelText = "Importing...";
+                    // Disable all other buttons so you can't break the import process
+                    proxyButton1.Slot.Parent.GetComponentsInChildren<Button>().ForEach(button => button.Enabled = false);
+                    proxyButton1.LabelText = "Importing...";
                     
                     try {
-                        TryImport(__instance, proxyButton);
+                        TryImport(__instance, proxyButton1);
                     } catch (Exception ex) {
-                        proxyButton.LabelText = $"<alpha=red>Failed to import video. Check logs.";
+                        proxyButton1.LabelText = $"<alpha=red>Failed to import video. Check logs.";
+                        Error(ex);
+                    }
+                };
+
+                text = "YouTube Proxy(Download & Import)";
+                Button proxyButton2 = uIBuilder.Button(in text);
+                proxyButton2.LocalPressed += async (IButton button, ButtonEventData eventData) =>
+                {
+                    // Disable all other buttons so you can't break the import process
+                    proxyButton2.Slot.Parent.GetComponentsInChildren<Button>().ForEach(button => button.Enabled = false);
+                    proxyButton2.LabelText = "Importing...";
+                    
+                    try {
+                        TryLocalImport(__instance, proxyButton2);
+                    } catch (Exception ex) {
+                        proxyButton2.LabelText = $"<alpha=red>Failed to import video. Check logs.";
                         Error(ex);
                     }
                 };
             }
         }
 
+        private static void TryLocalImport(VideoImportDialog __instance, Button proxyButton) {
+            float3 b = float3.Zero;
+            float num = __instance.LocalUserRoot?.GlobalScale ?? 1f;
+
+            __instance.Paths.ForEach(async (item) => {
+                Slot slot = __instance.LocalUserSpace.AddSlot("Video Proxy(Local Import)");
+                float3 a = __instance.Slot.GlobalPosition;
+                slot.GlobalPosition = a + b;
+                slot.GlobalRotation = __instance.Slot.GlobalRotation;
+                a = float3.One;
+                slot.GlobalScale = num * a;
+                a = __instance.Slot.Right;
+                b += a;
+                
+                UniversalImporter.UndoableImport(slot, async () => await DownloadFileAndImport(__instance.Slot, slot, item, config.GetValue(DOWNLOAD_FOLDER)));
+            });
+        }
+
+        public static async Task<Result> DownloadFileAndImport(Slot __instance, Slot slot, ImportItem item, string downloadPath)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    //HttpResponseMessage response = await client.GetAsync(item.filePath);
+                    //response.EnsureSuccessStatusCode();
+                    //byte[] fileBytes = await response.Content.ReadAsByteArrayAsync();
+                    //File.WriteAllBytes(downloadPath, fileBytes);
+                    //downloadPath = Path.Combine(downloadPath, Path.GetFileName(item.filePath));
+                    //Msg(downloadPath);
+
+                    //await default(ToBackground);
+                    //string text = await __instance.Engine.AssetManager.GatherAssetFile(new Uri(item.filePath), 100f);
+                    //await default(ToWorld);
+
+                    if (true) { // text != null
+                        await default(ToBackground);
+                        Uri uri = await slot.World.Engine.LocalDB.ImportLocalAssetAsync("C:/Users/lucas/Desktop/image.png", LocalDB.ImportLocation.Original).ConfigureAwait(continueOnCapturedContext: false);
+                        await default(ToWorld);
+                        VideoPlayerInterface videoInterface = await slot.SpawnEntity<VideoPlayerInterface, LegacyVideoPlayer>(FavoriteEntity.VideoPlayer);
+                        videoInterface.InitializeEntity(item.itemName);
+                        slot = videoInterface.Slot.GetObjectRoot();
+                        videoInterface.SetSource(uri, true);
+                        slot.Name = $"Video Proxy(Local Import): {uri}";
+                        __instance?.Destroy();
+                        return Result.Success();
+                    } else return Result.Failure("Failed to gather video from url.");          
+                }
+                catch (Exception ex)
+                {
+                    Error($"An error occurred: {ex.Message}");
+                    return Result.Failure(ex.Message);
+                }
+            }
+        }
+
+/*
+		StartTask(async delegate
+		{
+			Uri url = base.Slot.GetComponent<StaticBinary>()?.URL.Value;
+			if (!(url == null))
+			{
+				IsProcessing.Value = true;
+				await default(ToBackground);
+				string text = await base.Engine.AssetManager.GatherAssetFile(url, 100f);
+				if (text != null)
+				{
+					base.Engine.PlatformInterface.NotifyOfFile(text, Filename);
+					await default(ToWorld);
+					IsProcessing.Value = false;
+				}
+				else
+				{
+					_exported = false;
+				}
+			}
+		})
+*/
         private static void TryImport(VideoImportDialog __instance, Button proxyButton)
         {
             float3 b = float3.Zero;
             float num = __instance.LocalUserRoot?.GlobalScale ?? 1f;
 
             __instance.Paths.ForEach(async (item) => {
-                Slot s = __instance.LocalUserSpace.AddSlot("Video Proxy");
-                Slot slot = s;
+                Slot slot = __instance.LocalUserSpace.AddSlot("Video Proxy");
                 float3 a = __instance.Slot.GlobalPosition;
                 slot.GlobalPosition = a + b;
-                s.GlobalRotation = __instance.Slot.GlobalRotation;
-                Slot slot2 = s;
+                slot.GlobalRotation = __instance.Slot.GlobalRotation;
                 a = float3.One;
-                slot2.GlobalScale = num * a;
+                slot.GlobalScale = num * a;
                 a = __instance.Slot.Right;
                 b += a;
-                UniversalImporter.UndoableImport(s, async () => await CustomImportAsync(__instance.Slot, s, item, proxyButton));
+                UniversalImporter.UndoableImport(slot, async () => await CustomImportAsync(__instance.Slot, slot, item, proxyButton));
             });
         }
 
@@ -192,9 +287,8 @@ public class VideoProxy : ResoniteMod
                     {
                         uri = new Uri(await response.Content.ReadAsStringAsync());
                         Msg($"Successfully fetched video URL: {uri.ToString()}");
-                        _ = slot.Engine;
                         VideoPlayerInterface videoInterface = await slot.SpawnEntity<VideoPlayerInterface, LegacyVideoPlayer>(FavoriteEntity.VideoPlayer);
-                        videoInterface.InitializeEntity("Test Entity");
+                        videoInterface.InitializeEntity(item.itemName);
                         slot = videoInterface.Slot.GetObjectRoot();
                         videoInterface.SetSource(uri, true);
                         slot.Name = $"Video Proxy: {uri}";

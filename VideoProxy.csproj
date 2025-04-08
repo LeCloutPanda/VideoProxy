@@ -12,7 +12,8 @@
     <Deterministic>true</Deterministic>
     <GamePath>$(MSBuildThisFileDirectory)Resonite</GamePath>
     <GamePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\</GamePath>
-    <GamePath Condition="Exists('$(HOME)/.steam/steam/steamapps/common/Resonite/')">$(HOME)/.steam/steam/steamapps/common/Resonite/</GamePath>
+    <GamePath Condition="Exists('$(HOME)\.steam\steam\steamapps\common\Resonite\')">$(HOME)/.steam/steam/steamapps/common/Resonite/</GamePath>
+    <GamePath Condition="Exists('E:\Games\Steam\steamapps\common\Resonite\')">E:\Games\Steam\steamapps\common\Resonite\</GamePath>
     <GamePath Condition="Exists('E:\Programs\Steam\steamapps\common\Resonite\')">E:\Programs\Steam\steamapps\common\Resonite\</GamePath>
     <CopyLocal>false</CopyLocal>
     <CopyToMods Condition="'$(CopyToMods)'==''">true</CopyToMods>
@@ -38,11 +39,17 @@
     <Reference Include="SkyFrost.Base">
       <HintPath>$(GamePath)Resonite_Data\Managed\SkyFrost.Base.dll</HintPath>
     </Reference>
+    <Reference Include="FrooxEngine.Store">
+      <HintPath>$(GamePath)Resonite_Data\Managed\FrooxEngine.Store.dll</HintPath>
+    </Reference>
 		<Reference Include="SkyFrost.Base.Models">
 			<HintPath>$(GamePath)Resonite_Data\Managed\SkyFrost.Base.Models.dll</HintPath>
 		</Reference>
 		<Reference Include="System.Net.Http">
 			<HintPath>$(GamePath)Resonite_Data\Managed\System.Net.Http.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Threading.Tasks.Extensions">
+    <HintPath>$(GamePath)Resonite_Data\Managed\System.Threading.Tasks.Extensions.dll</HintPath>
 		</Reference>
   </ItemGroup>
 

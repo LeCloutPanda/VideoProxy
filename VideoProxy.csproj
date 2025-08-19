@@ -1,20 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{6ED4CE46-3DDB-4FCC-84D7-500BE9428999}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>VideoProxy</RootNamespace>
     <AssemblyTitle>VideoProxy</AssemblyTitle>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <TargetFramework>net48</TargetFramework>
-	<LangVersion>10</LangVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
+    <TargetFramework>net9.0</TargetFramework>
+
     <GamePath>$(MSBuildThisFileDirectory)Resonite</GamePath>
     <GamePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\</GamePath>
     <GamePath Condition="Exists('$(HOME)\.steam\steam\steamapps\common\Resonite\')">$(HOME)/.steam/steam/steamapps/common/Resonite/</GamePath>
     <GamePath Condition="Exists('E:\Games\Steam\steamapps\common\Resonite\')">E:\Games\Steam\steamapps\common\Resonite\</GamePath>
     <GamePath Condition="Exists('E:\Programs\Steam\steamapps\common\Resonite\')">E:\Programs\Steam\steamapps\common\Resonite\</GamePath>
+    
     <CopyLocal>false</CopyLocal>
     <CopyToMods Condition="'$(CopyToMods)'==''">true</CopyToMods>
     <DebugSymbols Condition="'$(Configuration)'=='Release'">false</DebugSymbols>
@@ -23,33 +20,30 @@
 
   <ItemGroup> 
     <Reference Include="HarmonyLib">
-      <HintPath Condition="Exists('$(GamePath)0Harmony.dll')">$(GamePath)0Harmony.dll</HintPath>
-      <HintPath>$(GamePath)rml_libs\0Harmony.dll</HintPath>
+      <HintPath Condition="Exists('$(GamePath)0Harmony.dll')">$(GamePath)0Harmony-Net9.dll</HintPath>
+      <HintPath>$(GamePath)rml_libs\0Harmony-Net9.dll</HintPath>
     </Reference>
     <Reference Include="Elements.Core">
-      <HintPath>$(GamePath)Resonite_Data\Managed\Elements.Core.dll</HintPath>
+      <HintPath>$(GamePath)Elements.Core.dll</HintPath>
     </Reference>
     <Reference Include="FrooxEngine">
-      <HintPath>$(GamePath)Resonite_Data\Managed\FrooxEngine.dll</HintPath>
+      <HintPath>$(GamePath)FrooxEngine.dll</HintPath>
     </Reference>
     <Reference Include="ResoniteModLoader">
       <HintPath>$(GamePath)ResoniteModLoader.dll</HintPath>
       <HintPath>$(GamePath)Libraries\ResoniteModLoader.dll</HintPath>
     </Reference>
     <Reference Include="SkyFrost.Base">
-      <HintPath>$(GamePath)Resonite_Data\Managed\SkyFrost.Base.dll</HintPath>
+      <HintPath>$(GamePath)SkyFrost.Base.dll</HintPath>
     </Reference>
     <Reference Include="FrooxEngine.Store">
-      <HintPath>$(GamePath)Resonite_Data\Managed\FrooxEngine.Store.dll</HintPath>
+      <HintPath>$(GamePath)FrooxEngine.Store.dll</HintPath>
     </Reference>
 		<Reference Include="SkyFrost.Base.Models">
-			<HintPath>$(GamePath)Resonite_Data\Managed\SkyFrost.Base.Models.dll</HintPath>
+			<HintPath>$(GamePath)SkyFrost.Base.Models.dll</HintPath>
 		</Reference>
-		<Reference Include="System.Net.Http">
-			<HintPath>$(GamePath)Resonite_Data\Managed\System.Net.Http.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Threading.Tasks.Extensions">
-    <HintPath>$(GamePath)Resonite_Data\Managed\System.Threading.Tasks.Extensions.dll</HintPath>
+    		<Reference Include="ProtoFlux.Nodes.FrooxEngine">
+			<HintPath>$(GamePath)ProtoFlux.Nodes.FrooxEngine.dll</HintPath>
 		</Reference>
   </ItemGroup>
 

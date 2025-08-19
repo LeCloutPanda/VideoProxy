@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>VideoProxy</RootNamespace>
     <AssemblyTitle>VideoProxy</AssemblyTitle>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <TargetFramework>net9.0</TargetFramework>
 
     <GamePath>$(MSBuildThisFileDirectory)Resonite</GamePath>

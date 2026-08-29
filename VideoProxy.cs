@@ -62,7 +62,7 @@ public class VideoProxy : ResoniteMod
             {
 
                 UIBuilder uIBuilder = ui;
-                LocaleString text = "Video Proxy: Nicetube proxy";
+                LocaleString text = "Nicetube proxy <sup>(Video Proxy Mod)</sup>";
                 Button proxyButton1 = uIBuilder.Button(in text);
                 proxyButton1.LocalPressed += (IButton button, ButtonEventData eventData) =>
                 {

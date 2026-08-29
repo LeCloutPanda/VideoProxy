@@ -12,6 +12,7 @@ using System.Collections.Generic;
 
 public class VideoProxy : ResoniteMod
 {
+    public const string VersionString = "1.4.0";
 
     public enum Resolution
     {
@@ -32,7 +33,7 @@ public class VideoProxy : ResoniteMod
 
     public override string Author => "LeCloutPanda & Sveken";
     public override string Name => "Video Proxy";
-    public override string Version => "1.4.0";
+    public override string Version => VersionString;
     public override string Link => "https://github.com/LeCloutPanda/VideoProxy";
     private static string youtubeIdRegex = @"(.*?)(^|\/|v=)([a-z0-9_-]{11})(.*)?";
 

@@ -3,7 +3,7 @@
     <RootNamespace>VideoProxy</RootNamespace>
     <AssemblyTitle>VideoProxy</AssemblyTitle>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
 
     <GamePath>$(MSBuildThisFileDirectory)Resonite</GamePath>
     <GamePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\</GamePath>
@@ -19,8 +19,8 @@
 
   <ItemGroup> 
     <Reference Include="HarmonyLib">
-      <HintPath Condition="Exists('$(GamePath)0Harmony.dll')">$(GamePath)0Harmony-Net9.dll</HintPath>
-      <HintPath>$(GamePath)rml_libs\0Harmony-Net9.dll</HintPath>
+      <HintPath Condition="Exists('$(GamePath)0Harmony.dll')">$(GamePath)0Harmony.dll</HintPath>
+      <HintPath>$(GamePath)rml_libs\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Elements.Core">
       <HintPath>$(GamePath)Elements.Core.dll</HintPath>
@@ -41,7 +41,7 @@
 		<Reference Include="SkyFrost.Base.Models">
 			<HintPath>$(GamePath)SkyFrost.Base.Models.dll</HintPath>
 		</Reference>
-    		<Reference Include="ProtoFlux.Nodes.FrooxEngine">
+    <Reference Include="ProtoFlux.Nodes.FrooxEngine">
 			<HintPath>$(GamePath)ProtoFlux.Nodes.FrooxEngine.dll</HintPath>
 		</Reference>
   </ItemGroup>
